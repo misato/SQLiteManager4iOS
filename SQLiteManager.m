@@ -146,7 +146,7 @@
 	
 	while (sqlite3_step(statement) == SQLITE_ROW) {
 		int columns = sqlite3_column_count(statement);
-		NSMutableDictionary *result = [[NSMutableDictionary alloc] initWithCapacity:1];
+		NSMutableDictionary *result = [[NSMutableDictionary alloc] initWithCapacity:columns];
 
 		for (int i = 0; i<columns; i++) {
 			const char *name = sqlite3_column_name(statement, i);	
@@ -178,7 +178,7 @@
 				case SQLITE_BLOB:
 					break;
 				case SQLITE_NULL:
-					[result setObject:nil forKey:columnName];
+					[result setObject:[NSNull null] forKey:columnName];
 					break;
 
 				default:
@@ -200,6 +200,8 @@
 	} //end while
 	sqlite3_finalize(statement);
 	
+	[self closeDatabase];
+	
 	return resultsArray;
 	
 }
@@ -215,15 +217,123 @@
 	
 	NSError *error = nil;
 	
-	if (sqlite3_close(db) != SQLITE_OK){
-		const char *errorMsg = sqlite3_errmsg(db);
-		NSString *errorStr = [NSString stringWithFormat:@"The database could not be closed: %@",[NSString stringWithCString:errorMsg encoding:NSUTF8StringEncoding]];
-		error = [self createDBErrorWithDescription:errorStr andCode:kDBFailAtClose];
+	
+	if (db != nil) {
+		if (sqlite3_close(db) != SQLITE_OK){
+			const char *errorMsg = sqlite3_errmsg(db);
+			NSString *errorStr = [NSString stringWithFormat:@"The database could not be closed: %@",[NSString stringWithCString:errorMsg encoding:NSUTF8StringEncoding]];
+			error = [self createDBErrorWithDescription:errorStr andCode:kDBFailAtClose];
+		}
+		
+		db = nil;
 	}
 	
-	db = nil;
-	
 	return error;
+}
+
+
+/**
+ * Creates an SQL dump of the database.
+ *
+ * This method could get a csv format dump with a few changes. 
+ * But i prefer working with sql dumps ;)
+ *
+ * @return an NSString containing the dump.
+ */
+
+- (NSString *)getDatabaseDump {
+	
+	NSMutableString *dump = [[NSMutableString alloc] initWithCapacity:256];
+	
+	// info string ;) please do not remove it
+	[dump appendString:@";\n; Dump generated with SQLiteManager4iOS \n;\n; By Misato (2011)\n"];
+	[dump appendString:[NSString stringWithFormat:@"; database %@;\n", databaseName]];
+	
+	// first get all table information
+	
+	NSArray *rows = [self getRowsForQuery:@"SELECT * FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"];
+	// last sql query returns something like:
+	// {
+	// name = users;
+	// rootpage = 2; 
+	// sql = "CREATE TABLE users (id integer primary key autoincrement, user text, password text)";
+	// "tbl_name" = users;
+	// type = table;
+	// }
+	
+	//loop through all tables
+	for (int i = 0; i<[rows count]; i++) {
+		
+		NSDictionary *obj = [rows objectAtIndex:i];
+		//get sql "create table" sentence
+		NSString *sql = [obj objectForKey:@"sql"];
+		[dump appendString:[NSString stringWithFormat:@"%@;\n",sql]];
+
+		//get table name
+		NSString *tableName = [obj objectForKey:@"name"];
+
+		//get all table content
+		NSArray *tableContent = [self getRowsForQuery:[NSString stringWithFormat:@"SELECT * FROM %@",tableName]];
+		
+		for (int j = 0; j<[tableContent count]; j++) {
+			NSDictionary *item = [tableContent objectAtIndex:j];
+			
+			//keys are column names
+			NSArray *keys = [item allKeys];
+			
+			//values are column values
+			NSArray *values = [item allValues];
+			
+			//start constructing insert statement for this item
+			[dump appendString:[NSString stringWithFormat:@"insert into %@ (",tableName]];
+			
+			//loop through all keys (aka column names)
+			NSEnumerator *enumerator = [keys objectEnumerator];
+			id obj;
+			while (obj = [enumerator nextObject]) {
+				[dump appendString:[NSString stringWithFormat:@"%@,",obj]];
+			}
+			
+			//delete last comma
+			NSRange range;
+			range.length = 1;
+			range.location = [dump length]-1;
+			[dump deleteCharactersInRange:range];
+			[dump appendString:@") values ("];
+			
+			// loop through all values
+			// value types could be:
+			// NSNumber for integer and floats, NSNull for null or NSString for text.
+			
+			enumerator = [values objectEnumerator];
+			while (obj = [enumerator nextObject]) {
+				//if it's a number (integer or float)
+				if ([obj isKindOfClass:[NSNumber class]]){
+					[dump appendString:[NSString stringWithFormat:@"%@,",[obj stringValue]]];
+				}
+				//if it's a null
+				else if ([obj isKindOfClass:[NSNull class]]){
+					[dump appendString:@"null,"];
+				}
+				//else is a string ;)
+				else{
+					[dump appendString:[NSString stringWithFormat:@"'%@',",obj]];
+				}
+				
+			}
+			
+			//delete last comma again
+			range.length = 1;
+			range.location = [dump length]-1;
+			[dump deleteCharactersInRange:range];
+			
+			//finish our insert statement
+			[dump appendString:@");\n"];
+			
+		}
+		
+	}
+	return dump;
 }
 
 @end

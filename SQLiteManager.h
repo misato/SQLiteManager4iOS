@@ -32,5 +32,6 @@ enum errorCodes {
 - (NSArray *) getRowsForQuery:(NSString *)sql;
 - (NSError *) closeDatabase;
 
+- (NSString *)getDatabaseDump;
 
 @end
