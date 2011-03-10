@@ -19,9 +19,9 @@ enum errorCodes {
 };
 
 @interface SQLiteManager : NSObject {
-	
-	sqlite3 *db;
-	NSString *databaseName;
+
+	sqlite3 *db; // The SQLite db reference
+	NSString *databaseName; // The database name
 }
 
 - (id)initWithDatabaseNamed:(NSString *)name;

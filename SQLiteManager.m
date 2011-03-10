@@ -22,6 +22,15 @@
 
 #pragma mark Init & Dealloc
 
+/**
+ * Init method. 
+ * Use this method to initialise the object, instead of just "init".
+ * 
+ * @param name the name of the database to manage.
+ *
+ * @return the SQLiteManager object initialised.
+ */
+
 - (id)initWithDatabaseNamed:(NSString *)name; {
 	self = [super init];
 	if (self != nil) {
@@ -30,6 +39,10 @@
 	}
 	return self;	
 }
+
+/**
+ * Dealloc method.
+ */
 
 - (void)dealloc {
 	[super dealloc];
