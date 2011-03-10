@@ -1,0 +1,77 @@
+*************************
+
+ SQLITE MANAGER FOR IOS
+
+*************************
+
+SQLiteManager is a simple Class "wrapper" to use SQLite3 within iOS SDK.
+It provides methods to connect/create a database in your documents app folder, do a simple query, get rows and close the connection.
+
+For the moment that's all ;) 
+
+SQLiteManager is made by Ester S‡nchez (aka misato) and it's free to use, modify and distribute. 
+If you use it, don't forget to mention me as the original creator. 
+
+Thanks and enjoy!
+
+**********************
+
+ INSTALLATION & USAGE
+
+**********************
+
+Just drag the two classes into your project. Also you need to import SQLite3 framework. Go to frameworks-> add existing framework->libsql3.dylib
+
+The code is pretty self-explanatory so i hope you'll understand it.
+If you have any doubts, don't hesitate to contact me at esanchez [at] misato [dot] es
+
+An example of the usage could be:
+
+myView.h
+---------
+
+@interface myView : UIViewController {
+	SQLiteManager *dbManager;	
+}
+
+- (void)insertData;
+- (void)getRows;
+
+@end
+
+myView.m
+
+@implementation myView 
+
+- (void)viewDidLoad {
+	//init SQLiteManager
+	dbManager = [[SQLiteManager alloc] initWithDatabaseNamed:@"myDatabase.db"];
+}
+
+//do an insert
+- (void)insertData {
+	NSError *error = [dbManager doQuery: @"insert into myTable (column1, column2) values ('value1','value2');"];
+	//if an error has occurred
+	if (error != nil) {
+		NSLog(@"An error has occurred: %@", [error localizedDescription]);
+	}
+}
+
+// get all data from mytable
+- (void)getRows {
+
+	NSArray *rowData =[dbManager getRowsForQuery:@"select * from mytable"];
+
+	NSLog (@"Row data: %@", rowData);
+	//do stuff with your data
+
+}
+
+- (void)dealloc {
+ 	[super dealloc];
+	[dbManager release];
+}
+
+@end
+
+
