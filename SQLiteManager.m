@@ -155,7 +155,14 @@
 	
 	sqlite3_stmt *statement;	
 	const char *query = [sql UTF8String];
-	sqlite3_prepare_v2(db, query, -1, &statement, NULL);
+        int returnCode = sqlite3_prepare_v2(db, query, -1, &statement, NULL);
+
+        if (returnCode == SQLITE_ERROR) {
+                const char *errorMsg = sqlite3_errmsg(db);
+                NSError *errorQuery = [self createDBErrorWithDescription:[NSString stringWithCString:errorMsg encoding:NSUTF8StringEncoding]
+                                                                                                andCode:kDBErrorQuery];
+                NSLog(@"%@", errorQuery);
+        }
 	
 	while (sqlite3_step(statement) == SQLITE_ROW) {
 		int columns = sqlite3_column_count(statement);
