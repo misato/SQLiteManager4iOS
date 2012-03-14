@@ -177,7 +177,7 @@
 				}
 				case SQLITE_FLOAT:
 				{
-					float value = sqlite3_column_int(statement, i);
+					float value = sqlite3_column_double(statement, i);
 					[result setObject:[NSNumber numberWithFloat:value] forKey:columnName];
 					break;
 				}
