@@ -215,7 +215,8 @@
 	
 	[self closeDatabase];
 	
-	return resultsArray;
+	// autorelease resultsArray to prevent memory leaks
+	return [resultsArray autorelease];
 	
 }
 
@@ -346,7 +347,9 @@
 		}
 		
 	}
-	return dump;
+	
+	// autorelease dump to prevent memory leaks
+	return [dump autorelease];
 }
 
 @end
