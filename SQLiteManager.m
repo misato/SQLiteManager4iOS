@@ -155,7 +155,14 @@
 	
 	sqlite3_stmt *statement;	
 	const char *query = [sql UTF8String];
-	sqlite3_prepare_v2(db, query, -1, &statement, NULL);
+	int returnCode = sqlite3_prepare_v2(db, query, -1, &statement, NULL);
+	
+	if (returnCode == SQLITE_ERROR) {
+		const char *errorMsg = sqlite3_errmsg(db);
+		NSError *errorQuery = [self createDBErrorWithDescription:[NSString stringWithCString:errorMsg encoding:NSUTF8StringEncoding]
+												andCode:kDBErrorQuery];
+		NSLog(@"%@", errorQuery);
+	}
 	
 	while (sqlite3_step(statement) == SQLITE_ROW) {
 		int columns = sqlite3_column_count(statement);
@@ -260,7 +267,7 @@
 	
 	// info string ;) please do not remove it
 	[dump appendString:@";\n; Dump generated with SQLiteManager4iOS \n;\n; By Misato (2011)\n"];
-	[dump appendString:[NSString stringWithFormat:@"; database %@;\n", databaseName]];
+	[dump appendString:[NSString stringWithFormat:@"; database %@;\n", [databaseName lastPathComponent]]];
 	
 	// first get all table information
 	
@@ -361,13 +368,18 @@
  * @return the path to the db file.
  */
 
-- (NSString *)getDatabasePath {
+- (NSString *)getDatabasePath{
 	
+	if([[NSFileManager defaultManager] fileExistsAtPath:databaseName]){
+		// Already Full Path
+		return databaseName;
+	} else {
 	// Get the documents directory
 	NSArray *dirPaths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
 	NSString *docsDir = [dirPaths objectAtIndex:0];
 	
 	return [docsDir stringByAppendingPathComponent:databaseName];
+	}
 }
 
 /**
