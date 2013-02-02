@@ -40,20 +40,7 @@
 	return self;	
 }
 
-/**
- * Dealloc method.
- */
-
-- (void)dealloc {
-	[super dealloc];
-	if (db != nil) {
-		[self closeDatabase];
-	}
-	[databaseName release];
-}
-
 #pragma mark SQLite Operations
-
 
 /**
  * Open or create a SQLite3 database.
@@ -214,8 +201,6 @@
 		} //end for
 		
 		[resultsArray addObject:result];
-		[result release];
-
 		
 	} //end while
 	sqlite3_finalize(statement);
@@ -223,7 +208,7 @@
 	[self closeDatabase];
 	
 	// autorelease resultsArray to prevent memory leaks
-	return [resultsArray autorelease];
+	return resultsArray;
 	
 }
 
@@ -354,9 +339,8 @@
 		}
 		
 	}
-	
-	// autorelease dump to prevent memory leaks
-	return [dump autorelease];
+
+	return dump;
 }
 
 @end
@@ -399,7 +383,6 @@
 	
 	NSDictionary *userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:description, NSLocalizedDescriptionKey, nil];
 	NSError *error = [NSError errorWithDomain:@"SQLite Error" code:code userInfo:userInfo];
-	[userInfo release];
 	
 	return error;
 }
