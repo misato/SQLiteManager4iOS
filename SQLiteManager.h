@@ -29,6 +29,7 @@ enum errorCodes {
 // SQLite Operations
 - (NSError *) openDatabase;
 - (NSError *) doQuery:(NSString *)sql;
+- (NSError *)doUpdateQuery:(NSString *)sql withParams:(NSArray *)params;
 - (NSArray *) getRowsForQuery:(NSString *)sql;
 - (NSError *) closeDatabase;
 
