@@ -137,12 +137,19 @@
 		sqlite3_prepare_v2(db, query, -1, &statement, NULL);
         
         //BIND the params!
-        
+        int count =0;
         for (id param in params ) {
+            count++;
             if ([param isKindOfClass:[NSString class]] )
-                sqlite3_bind_text(statement, 1, [param UTF8String], -1, SQLITE_TRANSIENT);
-            else //ASSUME int, will need to add other classes before this if you need them
-                sqlite3_bind_int(statement, 2, [param intValue]);
+                sqlite3_bind_text(statement, count, [param UTF8String], -1, SQLITE_TRANSIENT);
+            if ([param isKindOfClass:[NSNumber class]] ) {
+                if (!strcmp([param objCType], "f"))
+                    sqlite3_bind_double(statement, count, [param doubleValue]);
+                else if (!strcmp([param objCType], "i"))
+                    sqlite3_bind_int(statement, count, [param intValue]);
+                else
+                    NSLog(@"unknown NSNumber");
+            }
         }
 		
 		if (sqlite3_step(statement) == SQLITE_ERROR) {
