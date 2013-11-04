@@ -110,9 +110,9 @@
 }
 
 /**
- * Does an SQL UPDATE query.
+ * Does an SQL parameterized query.
  *
- * You should use this method for ONLY UPDATE statements.
+ * You should use this method for parameterized INSERT or UPDATE statements.
  *
  * @param sql the sql statement using ? for params.
  *
@@ -149,6 +149,9 @@
                     sqlite3_bind_int(statement, count, [param intValue]);
                 else
                     NSLog(@"unknown NSNumber");
+            }
+            if ([param isKindOfClass:[NSData class]] ) {
+                sqlite3_bind_blob(statement, count, [param bytes], [param length], SQLITE_STATIC);
             }
         }
 		
@@ -241,7 +244,17 @@
 				}
                     
 				case SQLITE_BLOB:
+                {
+                    int bytes = sqlite3_column_bytes(statement, i);
+                    if (bytes > 0) {
+                        const void *blob = sqlite3_column_blob(statement, i);
+                        if (blob != NULL) {
+                            [result setObject:[NSData dataWithBytes:blob length:bytes] forKey:columnName];
+                        }
+                    }
 					break;
+                }
+                    
 				case SQLITE_NULL:
 					[result setObject:[NSNull null] forKey:columnName];
 					break;
