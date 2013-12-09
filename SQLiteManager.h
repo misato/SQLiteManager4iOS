@@ -32,6 +32,7 @@ enum errorCodes {
 - (NSError *)doUpdateQuery:(NSString *)sql withParams:(NSArray *)params;
 - (NSArray *) getRowsForQuery:(NSString *)sql;
 - (NSError *) closeDatabase;
+- (NSInteger)getLastInsertRowID;
 
 - (NSString *)getDatabaseDump;
 

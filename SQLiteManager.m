@@ -150,6 +150,9 @@
                 else
                     NSLog(@"unknown NSNumber");
             }
+            if ([param isKindOfClass:[NSDate class]]) {
+               sqlite3_bind_double(statement, count, [param timeIntervalSince1970]);
+            }
             if ([param isKindOfClass:[NSData class]] ) {
                 sqlite3_bind_blob(statement, count, [param bytes], [param length], SQLITE_STATIC);
             }
@@ -168,6 +171,24 @@
 	}
     
 	return errorQuery;
+}
+
+- (NSInteger)getLastInsertRowID {
+
+    NSError *openError = nil;
+	
+    sqlite3_int64 rowid = 0;
+	
+	//Check if database is open and ready.
+	if (db == nil) {
+		openError = [self openDatabase];
+	}
+	
+	if (openError == nil) {
+        rowid = sqlite3_last_insert_rowid(db);
+    }
+    
+    return (NSInteger)rowid;
 }
 
 /**
@@ -278,7 +299,6 @@
 	
 	[self closeDatabase];
 	
-	// autorelease resultsArray to prevent memory leaks
 	return resultsArray;
 	
 }
