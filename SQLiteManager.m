@@ -143,9 +143,11 @@
             if ([param isKindOfClass:[NSString class]] )
                 sqlite3_bind_text(statement, count, [param UTF8String], -1, SQLITE_TRANSIENT);
             if ([param isKindOfClass:[NSNumber class]] ) {
-                if (!strcmp([param objCType], "f"))
+                if (!strcmp([param objCType], @encode(float)))
                     sqlite3_bind_double(statement, count, [param doubleValue]);
-                else if (!strcmp([param objCType], "i"))
+                else if (!strcmp([param objCType], @encode(int)))
+                    sqlite3_bind_int(statement, count, [param intValue]);
+                else if (!strcmp([param objCType], @encode(BOOL)))
                     sqlite3_bind_int(statement, count, [param intValue]);
                 else
                     NSLog(@"unknown NSNumber");
