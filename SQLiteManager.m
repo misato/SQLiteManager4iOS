@@ -110,9 +110,9 @@
 }
 
 /**
- * Does an SQL UPDATE query.
+ * Does an SQL parameterized query.
  *
- * You should use this method for ONLY UPDATE statements.
+ * You should use this method for parameterized INSERT or UPDATE statements.
  *
  * @param sql the sql statement using ? for params.
  *
@@ -143,12 +143,20 @@
             if ([param isKindOfClass:[NSString class]] )
                 sqlite3_bind_text(statement, count, [param UTF8String], -1, SQLITE_TRANSIENT);
             if ([param isKindOfClass:[NSNumber class]] ) {
-                if (!strcmp([param objCType], "f"))
+                if (!strcmp([param objCType], @encode(float)))
                     sqlite3_bind_double(statement, count, [param doubleValue]);
-                else if (!strcmp([param objCType], "i"))
+                else if (!strcmp([param objCType], @encode(int)))
+                    sqlite3_bind_int(statement, count, [param intValue]);
+                else if (!strcmp([param objCType], @encode(BOOL)))
                     sqlite3_bind_int(statement, count, [param intValue]);
                 else
                     NSLog(@"unknown NSNumber");
+            }
+            if ([param isKindOfClass:[NSDate class]]) {
+               sqlite3_bind_double(statement, count, [param timeIntervalSince1970]);
+            }
+            if ([param isKindOfClass:[NSData class]] ) {
+                sqlite3_bind_blob(statement, count, [param bytes], [param length], SQLITE_STATIC);
             }
         }
 		
@@ -165,6 +173,24 @@
 	}
     
 	return errorQuery;
+}
+
+- (NSInteger)getLastInsertRowID {
+
+    NSError *openError = nil;
+	
+    sqlite3_int64 rowid = 0;
+	
+	//Check if database is open and ready.
+	if (db == nil) {
+		openError = [self openDatabase];
+	}
+	
+	if (openError == nil) {
+        rowid = sqlite3_last_insert_rowid(db);
+    }
+    
+    return (NSInteger)rowid;
 }
 
 /**
@@ -241,7 +267,17 @@
 				}
                     
 				case SQLITE_BLOB:
+                {
+                    int bytes = sqlite3_column_bytes(statement, i);
+                    if (bytes > 0) {
+                        const void *blob = sqlite3_column_blob(statement, i);
+                        if (blob != NULL) {
+                            [result setObject:[NSData dataWithBytes:blob length:bytes] forKey:columnName];
+                        }
+                    }
 					break;
+                }
+                    
 				case SQLITE_NULL:
 					[result setObject:[NSNull null] forKey:columnName];
 					break;
@@ -265,7 +301,6 @@
 	
 	[self closeDatabase];
 	
-	// autorelease resultsArray to prevent memory leaks
 	return resultsArray;
 	
 }
