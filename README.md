@@ -1,8 +1,5 @@
-*************************
-
- SQLITE MANAGER FOR IOS
-
-*************************
+SQLite Manager for iOS
+======================
 
 SQLiteManager is a simple Class "wrapper" to use SQLite3 within iOS SDK.
 It provides methods to:
@@ -19,11 +16,8 @@ If you use it, don't forget to mention me as the original creator.
 
 Thanks and enjoy!
 
-**********************
-
- INSTALLATION & USAGE
-
-**********************
+Installation & Usage
+--------------------
 
 Just drag the two classes into your project. Also you need to import SQLite3 framework. Go to frameworks-> add existing framework->libsql3.dylib
 
