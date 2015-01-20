@@ -8,7 +8,10 @@
 
 #import <Foundation/Foundation.h>
 #import "sqlite3.h"
+#import "SQLiteMigrater.h"
 
+static NSString * const kSQLiteVersionTableName = @"ThisIsAStrangeVersionTableName";
+static NSString * const kSQLiteVersionDefaultVersion = @"InitialVersion";
 
 enum errorCodes {
 	kDBNotExists,
@@ -23,6 +26,10 @@ enum errorCodes {
 	sqlite3 *db; // The SQLite db reference
 	NSString *databaseName; // The database name
 }
+
+// migrater related
+@property (nonatomic, strong) SQLiteMigrater *migrator;
+@property (nonatomic, copy, readonly) NSString *currentVersion;
 
 - (id)initWithDatabaseNamed:(NSString *)name;
 
