@@ -15,6 +15,8 @@
 		2899E5220DE3E06400AC0155 /* UntitledViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2899E5210DE3E06400AC0155 /* UntitledViewController.xib */; };
 		28AD733F0D9D9553002E5188 /* MainWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = 28AD733E0D9D9553002E5188 /* MainWindow.xib */; };
 		28D7ACF80DDB3853001CB0EB /* UntitledViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 28D7ACF70DDB3853001CB0EB /* UntitledViewController.m */; };
+		4A528E211A6E6AC1001C101B /* SQLiteMigrater.m in Sources */ = {isa = PBXBuildFile; fileRef = 4A528E201A6E6AC1001C101B /* SQLiteMigrater.m */; };
+		4A528E241A6E7707001C101B /* MyMigrater.m in Sources */ = {isa = PBXBuildFile; fileRef = 4A528E231A6E7707001C101B /* MyMigrater.m */; };
 		6818867B132943B300459EB0 /* SQLiteManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 6818867A132943B300459EB0 /* SQLiteManager.m */; };
 		68C7103013297178004555F8 /* libsqlite3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 68C7102F13297178004555F8 /* libsqlite3.dylib */; };
 /* End PBXBuildFile section */
@@ -32,6 +34,10 @@
 		28D7ACF70DDB3853001CB0EB /* UntitledViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UntitledViewController.m; sourceTree = "<group>"; };
 		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		32CA4F630368D1EE00C91783 /* SQLiteManagerExample_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQLiteManagerExample_Prefix.pch; sourceTree = "<group>"; };
+		4A528E1F1A6E6AC1001C101B /* SQLiteMigrater.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SQLiteMigrater.h; path = ../../SQLiteMigrater.h; sourceTree = "<group>"; };
+		4A528E201A6E6AC1001C101B /* SQLiteMigrater.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SQLiteMigrater.m; path = ../../SQLiteMigrater.m; sourceTree = "<group>"; };
+		4A528E221A6E7707001C101B /* MyMigrater.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MyMigrater.h; sourceTree = "<group>"; };
+		4A528E231A6E7707001C101B /* MyMigrater.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MyMigrater.m; sourceTree = "<group>"; };
 		68188679132943B300459EB0 /* SQLiteManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SQLiteManager.h; path = ../SQLiteManager.h; sourceTree = SOURCE_ROOT; };
 		6818867A132943B300459EB0 /* SQLiteManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SQLiteManager.m; path = ../SQLiteManager.m; sourceTree = SOURCE_ROOT; };
 		68C7102F13297178004555F8 /* libsqlite3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libsqlite3.dylib; path = usr/lib/libsqlite3.dylib; sourceTree = SDKROOT; };
@@ -58,10 +64,14 @@
 			children = (
 				68188679132943B300459EB0 /* SQLiteManager.h */,
 				6818867A132943B300459EB0 /* SQLiteManager.m */,
+				4A528E221A6E7707001C101B /* MyMigrater.h */,
+				4A528E231A6E7707001C101B /* MyMigrater.m */,
 				1D3623240D0F684500981E51 /* UntitledAppDelegate.h */,
 				1D3623250D0F684500981E51 /* UntitledAppDelegate.m */,
 				28D7ACF60DDB3853001CB0EB /* UntitledViewController.h */,
 				28D7ACF70DDB3853001CB0EB /* UntitledViewController.m */,
+				4A528E1F1A6E6AC1001C101B /* SQLiteMigrater.h */,
+				4A528E201A6E6AC1001C101B /* SQLiteMigrater.m */,
 			);
 			path = Classes;
 			sourceTree = "<group>";
@@ -141,6 +151,8 @@
 /* Begin PBXProject section */
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+			};
 			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "SQLiteManagerExample" */;
 			compatibilityVersion = "Xcode 3.1";
 			developmentRegion = English;
@@ -177,7 +189,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4A528E211A6E6AC1001C101B /* SQLiteMigrater.m in Sources */,
 				1D60589B0D05DD56006BFB54 /* main.m in Sources */,
+				4A528E241A6E7707001C101B /* MyMigrater.m in Sources */,
 				1D3623260D0F684500981E51 /* UntitledAppDelegate.m in Sources */,
 				28D7ACF80DDB3853001CB0EB /* UntitledViewController.m in Sources */,
 				6818867B132943B300459EB0 /* SQLiteManager.m in Sources */,

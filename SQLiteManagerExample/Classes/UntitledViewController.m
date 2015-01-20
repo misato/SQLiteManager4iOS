@@ -7,6 +7,7 @@
 //
 
 #import "UntitledViewController.h"
+#import "MyMigrater.h"
 
 @implementation UntitledViewController
 
@@ -68,6 +69,7 @@
     [super viewDidLoad];
 	
 	dbManager = [[SQLiteManager alloc] initWithDatabaseNamed:@"prueba.db"];
+    dbManager.migrator = [[MyMigrater alloc] init];
 	NSString *dump = [dbManager getDatabaseDump];
 	textView.text = dump;
 	

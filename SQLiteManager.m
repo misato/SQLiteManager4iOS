@@ -8,15 +8,22 @@
 
 #import "SQLiteManager.h"
 
-// Private methods
+
 @interface SQLiteManager (Private)
 
 - (NSString *)getDatabasePath;
 - (NSError *)createDBErrorWithDescription:(NSString*)description andCode:(int)code;
+- (NSError *)executeQuery:(NSString *)sqlStirng;
+- (void)modifyCurrentVersionWithVersionString:(NSString *)string;
+- (NSArray *)fetchRowsWithQuery:(NSString *)sqlString;
 
 @end
 
+@interface SQLiteManager ()
 
+@property (nonatomic, strong, readwrite) NSString *currentVerson;
+
+@end
 
 @implementation SQLiteManager
 
@@ -56,6 +63,7 @@
 	NSError *error = nil;
 	
 	NSString *databasePath = [self getDatabasePath];
+    BOOL isNewDataBase = !([[NSFileManager defaultManager] fileExistsAtPath:databasePath]);
     
 	const char *dbpath = [databasePath UTF8String];
 	int result = sqlite3_open(dbpath, &db);
@@ -63,7 +71,15 @@
         const char *errorMsg = sqlite3_errmsg(db);
         NSString *errorStr = [NSString stringWithFormat:@"The database could not be opened: %@",[NSString stringWithCString:errorMsg encoding:NSUTF8StringEncoding]];
         error = [self createDBErrorWithDescription:errorStr	andCode:kDBFailAtOpen];
-	}
+    } else {
+        if (isNewDataBase) {
+            [self executeQuery:[NSString stringWithFormat:@"CREATE TABLE IF NOT EXISTS %@ (id integer primary key autoincrement, version text);", kSQLiteVersionTableName]];
+            [self executeQuery:[NSString stringWithFormat:@"INSERT INTO %@ (id, version) VALUES (0, '%@');", kSQLiteVersionTableName, kSQLiteVersionDefaultVersion]];
+        }
+        if ([self.migrator sqliteManagerShouldMigrate:self]) {
+            [self.migrator sqliteManagerPerformMigrate:self];
+        }
+    }
 	
 	return error;
 }
@@ -90,16 +106,7 @@
 	}
 	
 	if (openError == nil) {
-		sqlite3_stmt *statement;
-		const char *query = [sql UTF8String];
-		sqlite3_prepare_v2(db, query, -1, &statement, NULL);
-		
-		if (sqlite3_step(statement) == SQLITE_ERROR) {
-			const char *errorMsg = sqlite3_errmsg(db);
-			errorQuery = [self createDBErrorWithDescription:[NSString stringWithCString:errorMsg encoding:NSUTF8StringEncoding]
-													andCode:kDBErrorQuery];
-		}
-		sqlite3_finalize(statement);
+        errorQuery = [self executeQuery:sql];
 		errorQuery = [self closeDatabase];
 	}
 	else {
@@ -108,6 +115,8 @@
     
 	return errorQuery;
 }
+
+
 
 /**
  * Does an SQL parameterized query.
@@ -218,91 +227,17 @@
 
 - (NSArray *)getRowsForQuery:(NSString *)sql {
 	
-	NSMutableArray *resultsArray = [[NSMutableArray alloc] initWithCapacity:1];
+    NSArray *resultsArray = nil;
 	
 	if (db == nil) {
 		[self openDatabase];
 	}
-	
-	sqlite3_stmt *statement;
-	const char *query = [sql UTF8String];
-	int returnCode = sqlite3_prepare_v2(db, query, -1, &statement, NULL);
-	
-	if (returnCode == SQLITE_ERROR) {
-		const char *errorMsg = sqlite3_errmsg(db);
-		NSError *errorQuery = [self createDBErrorWithDescription:[NSString stringWithCString:errorMsg encoding:NSUTF8StringEncoding]
-                                                         andCode:kDBErrorQuery];
-		NSLog(@"%@", errorQuery);
-	}
-	
-	while (sqlite3_step(statement) == SQLITE_ROW) {
-		int columns = sqlite3_column_count(statement);
-		NSMutableDictionary *result = [[NSMutableDictionary alloc] initWithCapacity:columns];
-        
-		for (int i = 0; i<columns; i++) {
-			const char *name = sqlite3_column_name(statement, i);
-            
-			NSString *columnName = [NSString stringWithCString:name encoding:NSUTF8StringEncoding];
-			
-			int type = sqlite3_column_type(statement, i);
-			
-			switch (type) {
-				case SQLITE_INTEGER:
-				{
-					int value = sqlite3_column_int(statement, i);
-					[result setObject:[NSNumber numberWithInt:value] forKey:columnName];
-					break;
-				}
-				case SQLITE_FLOAT:
-				{
-					float value = sqlite3_column_double(statement, i);
-					[result setObject:[NSNumber numberWithFloat:value] forKey:columnName];
-					break;
-				}
-				case SQLITE_TEXT:
-				{
-					const char *value = (const char*)sqlite3_column_text(statement, i);
-					[result setObject:[NSString stringWithCString:value encoding:NSUTF8StringEncoding] forKey:columnName];
-					break;
-				}
-                    
-				case SQLITE_BLOB:
-                {
-                    int bytes = sqlite3_column_bytes(statement, i);
-                    if (bytes > 0) {
-                        const void *blob = sqlite3_column_blob(statement, i);
-                        if (blob != NULL) {
-                            [result setObject:[NSData dataWithBytes:blob length:bytes] forKey:columnName];
-                        }
-                    }
-					break;
-                }
-                    
-				case SQLITE_NULL:
-					[result setObject:[NSNull null] forKey:columnName];
-					break;
-                    
-				default:
-				{
-					const char *value = (const char *)sqlite3_column_text(statement, i);
-					[result setObject:[NSString stringWithCString:value encoding:NSUTF8StringEncoding] forKey:columnName];
-					break;
-				}
-                    
-			} //end switch
-			
-			
-		} //end for
-		
-		[resultsArray addObject:result];
-		
-	} //end while
-	sqlite3_finalize(statement);
-	
+    
+    resultsArray = [self fetchRowsWithQuery:sql];
+    
 	[self closeDatabase];
 	
 	return resultsArray;
-	
 }
 
 
@@ -436,10 +371,33 @@
 	return dump;
 }
 
+/**
+ *
+ * get current version of database
+ *
+ * @return current version, if got any error, return nil.
+ */
+- (NSString *)currentVersion
+{
+    if (_currentVerson == nil) {
+        NSArray *results = [self fetchRowsWithQuery:[NSString stringWithFormat:@"SELECT version FROM %@ WHERE id = 0", kSQLiteVersionTableName]];
+        if ([results count]) {
+            _currentVerson = results[0][@"version"];
+        } else {
+            _currentVerson = nil;
+        }
+    }
+    return _currentVerson;
+}
+
+
+
 @end
 
-
 #pragma mark -
+
+////////////////////////////////////// Private Methods ////////////////////////////////////////
+
 @implementation SQLiteManager (Private)
 
 /**
@@ -449,17 +407,17 @@
  */
 
 - (NSString *)getDatabasePath{
-	
-	if([[NSFileManager defaultManager] fileExistsAtPath:databaseName]){
-		// Already Full Path
-		return databaseName;
-	} else {
+    
+    if([[NSFileManager defaultManager] fileExistsAtPath:databaseName]){
+        // Already Full Path
+        return databaseName;
+    } else {
         // Get the documents directory
         NSArray *dirPaths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
         NSString *docsDir = [dirPaths objectAtIndex:0];
         
         return [docsDir stringByAppendingPathComponent:databaseName];
-	}
+    }
 }
 
 /**
@@ -473,12 +431,134 @@
  */
 
 - (NSError *)createDBErrorWithDescription:(NSString*)description andCode:(int)code {
-	
-	NSDictionary *userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:description, NSLocalizedDescriptionKey, nil];
-	NSError *error = [NSError errorWithDomain:@"SQLite Error" code:code userInfo:userInfo];
-	
-	return error;
+    
+    NSDictionary *userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:description, NSLocalizedDescriptionKey, nil];
+    NSError *error = [NSError errorWithDomain:@"SQLite Error" code:code userInfo:userInfo];
+    
+    return error;
+}
+
+/**
+ * Executes query after database opened.
+ *
+ * @param sqlString sql to be execute.
+ *
+ * @return the NSError just created.
+ */
+- (NSError *)executeQuery:(NSString *)sqlStirng
+{
+    NSError *errorQuery = nil;
+    sqlite3_stmt *statement;
+    const char *query = [sqlStirng UTF8String];
+    sqlite3_prepare_v2(db, query, -1, &statement, NULL);
+    
+    if (sqlite3_step(statement) == SQLITE_ERROR) {
+        const char *errorMsg = sqlite3_errmsg(db);
+        errorQuery = [self createDBErrorWithDescription:[NSString stringWithCString:errorMsg encoding:NSUTF8StringEncoding]
+                                                andCode:kDBErrorQuery];
+    }
+    sqlite3_finalize(statement);
+    
+    return errorQuery;
+}
+
+- (NSArray *)fetchRowsWithQuery:(NSString *)sqlString
+{
+    NSMutableArray *resultsArray = [[NSMutableArray alloc] init];
+    sqlite3_stmt *statement;
+    const char *query = [sqlString UTF8String];
+    int returnCode = sqlite3_prepare_v2(db, query, -1, &statement, NULL);
+    
+    if (returnCode == SQLITE_ERROR) {
+        const char *errorMsg = sqlite3_errmsg(db);
+        NSError *errorQuery = [self createDBErrorWithDescription:[NSString stringWithCString:errorMsg encoding:NSUTF8StringEncoding]
+                                                         andCode:kDBErrorQuery];
+        NSLog(@"%@", errorQuery);
+    }
+    
+    while (sqlite3_step(statement) == SQLITE_ROW) {
+        int columns = sqlite3_column_count(statement);
+        NSMutableDictionary *result = [[NSMutableDictionary alloc] initWithCapacity:columns];
+        
+        for (int i = 0; i<columns; i++) {
+            const char *name = sqlite3_column_name(statement, i);
+            
+            NSString *columnName = [NSString stringWithCString:name encoding:NSUTF8StringEncoding];
+            
+            int type = sqlite3_column_type(statement, i);
+            
+            switch (type) {
+                case SQLITE_INTEGER:
+                {
+                    int value = sqlite3_column_int(statement, i);
+                    [result setObject:[NSNumber numberWithInt:value] forKey:columnName];
+                    break;
+                }
+                case SQLITE_FLOAT:
+                {
+                    float value = sqlite3_column_double(statement, i);
+                    [result setObject:[NSNumber numberWithFloat:value] forKey:columnName];
+                    break;
+                }
+                case SQLITE_TEXT:
+                {
+                    const char *value = (const char*)sqlite3_column_text(statement, i);
+                    [result setObject:[NSString stringWithCString:value encoding:NSUTF8StringEncoding] forKey:columnName];
+                    break;
+                }
+                    
+                case SQLITE_BLOB:
+                {
+                    int bytes = sqlite3_column_bytes(statement, i);
+                    if (bytes > 0) {
+                        const void *blob = sqlite3_column_blob(statement, i);
+                        if (blob != NULL) {
+                            [result setObject:[NSData dataWithBytes:blob length:bytes] forKey:columnName];
+                        }
+                    }
+                    break;
+                }
+                    
+                case SQLITE_NULL:
+                    [result setObject:[NSNull null] forKey:columnName];
+                    break;
+                    
+                default:
+                {
+                    const char *value = (const char *)sqlite3_column_text(statement, i);
+                    [result setObject:[NSString stringWithCString:value encoding:NSUTF8StringEncoding] forKey:columnName];
+                    break;
+                }
+                    
+            } //end switch
+            
+            
+        } //end for
+        
+        [resultsArray addObject:result];
+        
+    } //end while
+    sqlite3_finalize(statement);
+    
+    return resultsArray;
+}
+
+/**
+ *
+ * modify the version column in VersionTable
+ *
+ * @param string the string of version
+ *
+ */
+- (void)modifyCurrentVersionWithVersionString:(NSString *)string
+{
+    _currentVerson = nil;
+    [self executeQuery:[NSString stringWithFormat:@"UPDATE %@ SET version = %@ WHERE id = 0;", kSQLiteVersionTableName, string]];
 }
 
 @end
+
+
+
+
 
